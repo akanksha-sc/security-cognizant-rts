@@ -64,9 +64,9 @@ void generate_task_wcets(std::vector<Tasks>& tasks) {
     for (int i = 0; i < static_cast<int>(tasks.size()); i++) {
         double random_number = dist(gen);
 	tasks[i].ptrust = TRUST_PROBABILITY;
+        sum = tasks[i].period * tasks[i].utilization;
 
 	if (random_number < tasks[i].ptrust) {
-            sum = tasks[i].period * tasks[i].utilization;
 	    tasks[i].cleanup = Q_FRACTION * sum;
 	    tasks[i].wcet = sum - tasks[i].cleanup;
 	}
@@ -74,7 +74,8 @@ void generate_task_wcets(std::vector<Tasks>& tasks) {
 	    tasks[i].cleanup = 0.0;
             tasks[i].wcet = tasks[i].period * tasks[i].utilization;
 	}
-        assert(tasks[i].wcet >= 0.0 && sum < tasks[i].period && tasks[i].cleanup >= 0.0 && tasks[i].cleanup <= tasks[i].wcet);
+        assert(tasks[i].wcet >= 0.0 && sum < tasks[i].period);
+	assert(tasks[i].cleanup >= 0.0 && tasks[i].cleanup <= tasks[i].wcet);
     }
 }
 
@@ -87,6 +88,9 @@ void generate_task_deadlines(std::vector<Tasks>& tasks) {
  
     std::random_device rd;
     std::mt19937_64 gen(rd());
+
+    double min_deadline = 0.0;
+    double max_deadline = 0.0;
 
     for (size_t i = 0; i < tasks.size(); i++) {
 
@@ -101,14 +105,13 @@ void generate_task_deadlines(std::vector<Tasks>& tasks) {
         
         // assert(tasks[i].deadline >= MIN_DEADLINE_FACTOR * tasks[i].period - 1 && tasks[i].deadline <= MAX_DEADLINE_FACTOR * tasks[i].period);
 
-	double min_deadline = tasks[i].wcet * tasks[i].cleanup;
-        double max_deadline = min_deadline + DEADLINE_FACTOR * (tasks[i].period - min_deadline);
+	min_deadline = tasks[i].wcet + tasks[i].cleanup;
+        max_deadline = min_deadline + (DEADLINE_FACTOR * (tasks[i].period - min_deadline));
         std::uniform_real_distribution<double> dist(min_deadline, max_deadline);
 
         double random_number = dist(gen);
-	std::cout << "Max deadline: " << max_deadline << " d: " << random_number << std::endl;
 	tasks[i].deadline = random_number;
-	// assert(tasks[i].deadline >= min_deadline && tasks[i].deadline < max_deadline);
+	assert(tasks[i].deadline >= min_deadline && tasks[i].deadline < max_deadline);
     }
 }
 
@@ -116,7 +119,7 @@ void generate_task_deadlines(std::vector<Tasks>& tasks) {
 // Driver function to generate task parameters
 std::vector<Tasks> generate_tasks() {
     std::vector<Tasks> tasks(NUM_TASKS);
-
+ 
     // Generate task parameters
     generate_task_utilizations(tasks, MAX_UTILIZATION);
     generate_task_periods(tasks);
@@ -127,6 +130,15 @@ std::vector<Tasks> generate_tasks() {
 }
 
 int main() {
+
+    // Generate number of phases
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(1, MAX_PHASES);
+    int p = dist(gen);
+
+    std::cout << "Number of phases: " << p << "\n";
+
     // Generate tasks
     std::vector<Tasks> tasks = generate_tasks();
 
