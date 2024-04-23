@@ -13,8 +13,11 @@
 #define GRANULARITY 1
 
 // Task deadline = DEADLINE_FACTOR * task period
-#define MIN_DEADLINE_FACTOR 0.25
-#define MAX_DEADLINE_FACTOR 4.0
+// #define MIN_DEADLINE_FACTOR 0.25
+// #define MAX_DEADLINE_FACTOR 4.0
+
+// Deadline factor
+#define DEADLINE_FACTOR 1.0
 
 // =====================
 // FUNCTION DECLARATIONS
@@ -31,10 +34,6 @@ void generate_task_deadlines(std::vector<Task>& tasks);
 
 // The worst-case execution time of each task is given by Ci = Ui · Ti
 void generate_task_wcets(std::vector<Task>& tasks);
-
-int generate_num_phases (int p);
-
-double generate_cleanup_cost(double wcet, double q_fraction);
 
 // Task parameter generator driver function
 // Tasks* task_parameter_generator (Tasks *tasks, int num_tasks, double total_util);

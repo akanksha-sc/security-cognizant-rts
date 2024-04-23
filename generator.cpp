@@ -9,6 +9,8 @@
 // Generate task utilizations (Ui = Ci / Ti) using the UUnifast algorithm [1] (for unbiased distribution)
 
 void generate_task_utilizations(std::vector<Task>& tasks, double max_util) {
+    
+    assert(!tasks.empty() && max_util > 0.0 && max_util < 1.0);
 
     double sum_util = max_util;
     double rem_sum_util = 0.0;
@@ -16,8 +18,6 @@ void generate_task_utilizations(std::vector<Task>& tasks, double max_util) {
     std::random_device rd;
     std::mt19937_64 gen(rd());
     std::uniform_real_distribution<double> dist(0.0, 1.0);
-
-    assert(!tasks.empty() && max_util > 0.0 && max_util < 1.0);
 
     for (size_t i = 0; i < tasks.size() - 1; i++) {
         rem_sum_util = sum_util * pow(dis(gen), 1.0 / (tasks.size() - i));
@@ -27,7 +27,6 @@ void generate_task_utilizations(std::vector<Task>& tasks, double max_util) {
         assert(rem_sum_util >= 0.0 && rem_sum_util <= max_util && sum_util >= 0.0 && sum_util <= max_util);
     }
 
-    // Adjusting for the last task as well
     tasks.back().utilization = std::round(sum_util * 100) / 100.0;
     assert(sum_util >= 0.0 && sum_util <= max_util);
 }
@@ -36,11 +35,11 @@ void generate_task_utilizations(std::vector<Task>& tasks, double max_util) {
 
 void generate_task_periods(std::vector<Task>& tasks) {
     
+    assert(!tasks.empty());
+    
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<double> dist(log(MIN_PERIOD), log(MAX_PERIOD + GRANULARITY));
-
-    assert(!tasks.empty());
 
     for (int i = 0; i < static_cast<int>(tasks.size()); i++) {
         double random_number = dist(gen);
@@ -49,54 +48,60 @@ void generate_task_periods(std::vector<Task>& tasks) {
     }
 }
 
-// Generates task deadlines Di according to log uniform distribution in the range [MIN_DEADLINE_FACTOR, MAX_DEADLINE_FACTOR]Ti
-
-void generate_task_deadlines(std::vector<Task>& tasks) {
- 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    
-    assert(!tasks.empty());
-
-    for (size_t i = 0; i < tasks.size(); i++) {
-        double log_min_deadline = std::log(MIN_DEADLINE_FACTOR * tasks[i].period);
-        double log_max_deadline = std::log(MAX_DEADLINE_FACTOR * tasks[i].period + GRANULARITY);
-        std::uniform_real_distribution<double> dist(log_min_deadline, log_max_deadline);
-
-        double random_number = dist(gen);
-        tasks[i].deadline = static_cast<int>(std::floor(std::exp(random_number) / GRANULARITY) * GRANULARITY);
-        
-        assert(tasks[i].deadline >= MIN_DEADLINE_FACTOR * tasks[i].period - 1 && tasks[i].deadline <= MAX_DEADLINE_FACTOR * tasks[i].period);
-    }
-}
-
-// Determine the worst-case execution times of each task --> Ci = Ui * Ti
+// Determine the worst-case execution times and cleanup costs fore each task 
+// --> Ci = Ui * Ti, Qi = QF * Ci (if p < ptrust), 0 (otherwise)
 
 void generate_task_wcets(std::vector<Task>& tasks) {
 
     assert(!tasks.empty());
 
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
+
     for (int i = 0; i < static_cast<int>(tasks.size()); i++) {
-        tasks[i].wcet = tasks[i].period * tasks[i].utilization;
-        assert(tasks[i].wcet >= 0.0 && tasks[i].wcet < tasks[i].period);
+        double random_number = dist(gen);
+	
+	if (random_number < tasks[i].ptrust) {
+            double sum = tasks[i].period * tasks[i].utilization;
+	    tasks[i].cleanup = Q_FACTOR * tasks[i].period;
+	    tasks[i].wcet = sum - tasks[i].cleanup;
+	}
+	else {
+	    tasks[i].cleanup = 0.0;
+            tasks[i].wcet = tasks[i].period * tasks[i].utilization;
+	}
+        assert(tasks[i].wcet >= 0.0 && tasks[i].wcet < tasks[i].period && tasks[i].cleanup >= 0.0; tasks[i].cleanup <= tasks[i].wcet);
     }
 }
 
-// TODO: Finalize
 
-int generate_num_phases (int p) {
+// Generates task deadlines Di according to the uniform distribution in the range defined by [3]
 
+void generate_task_deadlines(std::vector<Task>& tasks) {
+
+    assert(!tasks.empty());
+ 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(1, p);
-    return dist(gen);
-}
 
-double generate_cleanup_cost(double wcet, double q_fraction) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
-    return wcet * q_fraction * dist(gen);
+    for (size_t i = 0; i < tasks.size(); i++) {
+
+        // Generates task deadlines Di according to log uniform distribution in the range [MIN_DEADLINE_FACTOR, MAX_DEADLINE_FACTOR]Ti
+
+	// double log_min_deadline = std::log(MIN_DEADLINE_FACTOR * tasks[i].period);
+        // double log_max_deadline = std::log(MAX_DEADLINE_FACTOR * tasks[i].period + GRANULARITY);
+        // std::uniform_real_distribution<double> dist(log_min_deadline, log_max_deadline);
+
+        // double random_number = dist(gen);
+        // tasks[i].deadline = static_cast<int>(std::floor(std::exp(random_number) / GRANULARITY) * GRANULARITY);
+        
+        // assert(tasks[i].deadline >= MIN_DEADLINE_FACTOR * tasks[i].period - 1 && tasks[i].deadline <= MAX_DEADLINE_FACTOR * tasks[i].period);
+
+	double min_deadline = tasks[i].wcet * tasks[i].cleanup;
+        double max_deadline = min_deadline + DEADLINE_FACTOR * (tasks[i].period - min_deadline);
+        std::uniform_real_distribution<double> dist(min_deadline, max_deadline);
+    }
 }
 
 

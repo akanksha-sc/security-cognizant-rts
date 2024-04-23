@@ -18,8 +18,11 @@ typedef struct {
     int id;                              // To identify a given task structure
     int period;                          // Minimum inter-arrival time between any two successive jobs of this task
     int deadline;                        // Relative deadline 
-    double wcet;                         // Worst-case execution times of the task at each criticality level [dual-criticality system]
-    double utilization;                  // Task utilizations at each criticality level [dual-criticality system]
+    double wcet;                         // Worst-case execution time
+    double utilization;                  // Task utilization
+    double cleanup;                      // Clean up cost = (Q fraction * WCET)
+    double ptrust;                       // Probability that this task is trusted
+                                         // (i.e., this is a potential victim task,needing to perform clean-up operations).
     int num_jobs;                        // Number of jobs in floor_upper_bound_t interval
 } Tasks;
 
