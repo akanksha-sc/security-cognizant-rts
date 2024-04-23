@@ -104,9 +104,11 @@ void generate_task_deadlines(std::vector<Tasks>& tasks) {
 	double min_deadline = tasks[i].wcet * tasks[i].cleanup;
         double max_deadline = min_deadline + DEADLINE_FACTOR * (tasks[i].period - min_deadline);
         std::uniform_real_distribution<double> dist(min_deadline, max_deadline);
+
         double random_number = dist(gen);
 	std::cout << "Max deadline: " << max_deadline << " d: " << random_number << std::endl;
 	tasks[i].deadline = random_number;
+	// assert(tasks[i].deadline >= min_deadline && tasks[i].deadline < max_deadline);
     }
 }
 
