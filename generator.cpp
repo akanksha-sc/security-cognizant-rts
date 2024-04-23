@@ -8,7 +8,7 @@
 
 // Generate task utilizations (Ui = Ci / Ti) using the UUnifast algorithm [1] (for unbiased distribution)
 
-void generate_task_utilizations(std::vector<Task>& tasks, double max_util) {
+void generate_task_utilizations(std::vector<Tasks>& tasks, double max_util) {
     
     assert(!tasks.empty() && max_util > 0.0 && max_util < 1.0);
 
@@ -20,7 +20,7 @@ void generate_task_utilizations(std::vector<Task>& tasks, double max_util) {
     std::uniform_real_distribution<double> dist(0.0, 1.0);
 
     for (size_t i = 0; i < tasks.size() - 1; i++) {
-        rem_sum_util = sum_util * pow(dis(gen), 1.0 / (tasks.size() - i));
+        rem_sum_util = sum_util * pow(dist(gen), 1.0 / (tasks.size() - i));
         tasks[i].utilization = sum_util - rem_sum_util;
         tasks[i].utilization = std::round(tasks[i].utilization * 100) / 100.0;
         sum_util = rem_sum_util;
@@ -33,17 +33,17 @@ void generate_task_utilizations(std::vector<Task>& tasks, double max_util) {
 
 // Generate task periods Ti according as per log-uniform distribution [2]
 
-void generate_task_periods(std::vector<Task>& tasks) {
+void generate_task_periods(std::vector<Tasks>& tasks) {
     
     assert(!tasks.empty());
     
     std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937_64 gen(rd());
     std::uniform_real_distribution<double> dist(log(MIN_PERIOD), log(MAX_PERIOD + GRANULARITY));
 
     for (int i = 0; i < static_cast<int>(tasks.size()); i++) {
         double random_number = dist(gen);
-        tasks[i].period = static_cast<int>(std::floor(std::exp(random_number) / GRANULARITY) * GRANULARITY);
+        tasks[i].period = std::floor(std::exp(random_number) / GRANULARITY) * GRANULARITY;
         assert(tasks[i].period >= MIN_PERIOD && tasks[i].period <= (MAX_PERIOD + GRANULARITY));
     }
 }
@@ -51,7 +51,7 @@ void generate_task_periods(std::vector<Task>& tasks) {
 // Determine the worst-case execution times and cleanup costs fore each task 
 // --> Ci = Ui * Ti, Qi = QF * Ci (if p < ptrust), 0 (otherwise)
 
-void generate_task_wcets(std::vector<Task>& tasks) {
+void generate_task_wcets(std::vector<Tasks>& tasks) {
 
     assert(!tasks.empty());
 
@@ -59,31 +59,34 @@ void generate_task_wcets(std::vector<Task>& tasks) {
     std::mt19937_64 gen(rd());
     std::uniform_real_distribution<double> dist(0.0, 1.0);
 
+    double sum = 0.0;
+
     for (int i = 0; i < static_cast<int>(tasks.size()); i++) {
         double random_number = dist(gen);
-	
+	tasks[i].ptrust = TRUST_PROBABILITY;
+
 	if (random_number < tasks[i].ptrust) {
-            double sum = tasks[i].period * tasks[i].utilization;
-	    tasks[i].cleanup = Q_FACTOR * tasks[i].period;
+            sum = tasks[i].period * tasks[i].utilization;
+	    tasks[i].cleanup = Q_FRACTION * sum;
 	    tasks[i].wcet = sum - tasks[i].cleanup;
 	}
 	else {
 	    tasks[i].cleanup = 0.0;
             tasks[i].wcet = tasks[i].period * tasks[i].utilization;
 	}
-        assert(tasks[i].wcet >= 0.0 && tasks[i].wcet < tasks[i].period && tasks[i].cleanup >= 0.0; tasks[i].cleanup <= tasks[i].wcet);
+        assert(tasks[i].wcet >= 0.0 && sum < tasks[i].period && tasks[i].cleanup >= 0.0 && tasks[i].cleanup <= tasks[i].wcet);
     }
 }
 
 
 // Generates task deadlines Di according to the uniform distribution in the range defined by [3]
 
-void generate_task_deadlines(std::vector<Task>& tasks) {
+void generate_task_deadlines(std::vector<Tasks>& tasks) {
 
     assert(!tasks.empty());
  
     std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937_64 gen(rd());
 
     for (size_t i = 0; i < tasks.size(); i++) {
 
@@ -101,25 +104,44 @@ void generate_task_deadlines(std::vector<Task>& tasks) {
 	double min_deadline = tasks[i].wcet * tasks[i].cleanup;
         double max_deadline = min_deadline + DEADLINE_FACTOR * (tasks[i].period - min_deadline);
         std::uniform_real_distribution<double> dist(min_deadline, max_deadline);
+        double random_number = dist(gen);
+	std::cout << "Max deadline: " << max_deadline << " d: " << random_number << std::endl;
+	tasks[i].deadline = random_number;
     }
 }
 
 
+// Driver function to generate task parameters
+std::vector<Tasks> generate_tasks() {
+    std::vector<Tasks> tasks(NUM_TASKS);
 
+    // Generate task parameters
+    generate_task_utilizations(tasks, MAX_UTILIZATION);
+    generate_task_periods(tasks);
+    generate_task_wcets(tasks);
+    generate_task_deadlines(tasks);
 
+    return tasks;
+}
 
+int main() {
+    // Generate tasks
+    std::vector<Tasks> tasks = generate_tasks();
 
+    // Display generated tasks
+    std::cout << "Generated Tasks:\n";
+    for (int i = 0; i < NUM_TASKS; ++i) {
+        std::cout << "Task " << i+1 << ":\n";
+        std::cout << "Utilization: " << tasks[i].utilization << ", ";
+        std::cout << "Period: " << tasks[i].period << ", ";
+        std::cout << "WCET: " << tasks[i].wcet << ", ";
+        std::cout << "Trust Probability: " << tasks[i].ptrust << ", ";
+        std::cout << "Cleanup: " << tasks[i].cleanup << ", ";
+        std::cout << "Deadline: " << tasks[i].deadline << "\n";
+    }
 
-
-
-
-
-
-
-
-
-
-
+    return 0;
+}
 
 
 
