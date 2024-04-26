@@ -19,8 +19,8 @@
 #define Q_FRACTION 0.25
 
 // Task period bounds
-#define MIN_PERIOD 10000
-#define MAX_PERIOD 1000000
+#define MIN_PERIOD 10
+#define MAX_PERIOD 100
 #define GRANULARITY 1
 
 // Task deadline = DEADLINE_FACTOR * task period
