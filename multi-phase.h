@@ -2,7 +2,7 @@
 #define MULTI_PHASE_H
 
 #include <vector>
-#include "multi_phase_tasks.h"
+#include "multi_phase_generator.h"
 
 bool scheduling_algorithm(std::vector<Tasks>& tasks);
 double compute_max_blocking(std::vector<Tasks>& tasks, int td);

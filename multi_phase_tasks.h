@@ -1,5 +1,5 @@
-#ifndef TASKS_H
-#define TASKS_H
+#ifndef MULTI_PHASE_TASKS_H
+#define MULTI_PHASE_TASKS_H
 
 // =================
 // MACRO DEFINITIONS
@@ -14,7 +14,7 @@
 // =============================
 
 // Task structure
-typedef struct { 
+typedef struct Tasks{ 
     int id = 0;                 // To identify a given task structure
     double period = 0.0;        // Minimum inter-arrival time between any two successive jobs of this task
     double deadline = 0.0;      // Relative deadline 
