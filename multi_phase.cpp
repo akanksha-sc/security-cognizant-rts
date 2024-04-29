@@ -80,21 +80,32 @@ bool scheduling_algorithm(vector<Tasks>& tasks) {
 int main() {
 
     // Generate tasks
-    std::vector<Tasks> tasks = generate_tasks();
+    int total_scheduled = 0;
+    int total_non_scheduled = 0;
+
 
     // Display generated tasks
-    std::cout << "Generated Tasks:\n";
-    for (int i = 0; i < NUM_TASKS; ++i) {
-        std::cout << "Task " << i+1 << ":\n";
-        std::cout << "Utilization: " << tasks[i].utilization << ", ";
-        std::cout << "Period: " << tasks[i].period << ", ";
-        std::cout << "WCET: " << tasks[i].wcet << ", ";
-        std::cout << "Trust Probability: " << tasks[i].ptrust << ", ";
-        std::cout << "Cleanup: " << tasks[i].cleanup << ", ";
-        std::cout << "Deadline: " << tasks[i].deadline << "\n";
+    for(int num_tasksets=0; num_tasksets<NUM_TASKSETS; num_tasksets++) {
+        std::vector<Tasks> tasks = generate_tasks();
+        std::cout << "Generated Tasks:\n";
+        for (int i = 0; i < NUM_TASKS; ++i) {
+            std::cout << "Task " << i+1 << ":\n";
+            std::cout << "Utilization: " << tasks[i].utilization << ", ";
+            std::cout << "Period: " << tasks[i].period << ", ";
+            std::cout << "WCET: " << tasks[i].wcet << ", ";
+            std::cout << "Trust Probability: " << tasks[i].ptrust << ", ";
+            std::cout << "Cleanup: " << tasks[i].cleanup << ", ";
+            std::cout << "Deadline: " << tasks[i].deadline << "\n";
+        }
+        cout<<"Task Num: "<<num_tasksets<<" ";
+        bool scheduled = scheduling_algorithm(tasks);
+        if(scheduled) {
+            total_scheduled ++;
+        } else {
+            total_non_scheduled ++;
+        }
     }
-
-    scheduling_algorithm(tasks);
+    cout<<"Total scheduled are: "<<total_scheduled<<" Total non-scheduled are: "<<total_non_scheduled<<endl;
     return 0;
 }
 
